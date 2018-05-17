@@ -5,8 +5,17 @@
 </head>
 <body>
   <header>
-      <% include ../partials/header %>
+      <% include partials/_header %>
   </header>
     <!-- Add your EJS code here -->
+    <!-- With = it prints to the template -->
+    <ul>
+      <% for (shortUrl in urls) { %>
+        <li>
+          <span><%= urls[shortUrl] %></span>
+          <a href=>Shorten URL</a>
+        </li>
+      <% } %>
+    </ul>
 </body>
 </html>

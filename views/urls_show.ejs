@@ -1,8 +1,14 @@
-app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
-  res.render("urls_index", templateVars);
-});
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>TinyApp</title>
+</head>
+<body>
 <header>
-    <% include ../partials/header %>
+    <% include partials/_header %>
 </header>
+
+<%= short %>
+<%= long %>
+</body>
+</html>
