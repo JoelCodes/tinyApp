@@ -13,12 +13,13 @@
     <ul>
       <% for (shortUrl in urls) { %>
         <li>
-          <%= [shortUrl] %> &#8594 <a href="/u/<%= shortUrl %>"><%= urls[shortUrl] %></a>
-          <a href="/urls/<%= shortUrl %>"><span>Edit</span></a>  <!--WIT line  -->
-          <!-- <form method="GET" action="/urls/<%= shortUrl %>">  
-            <input type="submit" value="Edit"/>   //EDIT BUTTON
-          </form> -->
-          <form method="POST" action="/urls/<%= shortUrl %>/delete">  
+          <form method="POST" action="/urls/<%= shortUrl %>/delete">
+            <%= [shortUrl] %> &#8594 <a href="/u/<%= shortUrl %>"><%= urls[shortUrl] %></a>
+            <a href="/urls/<%= shortUrl %>"><span>Edit</span></a>  <!--WIT line  -->
+            <!-- <form method="GET" action="/urls/<%= shortUrl %>">  
+              <input type="submit" value="Edit"/>   //EDIT BUTTON
+            </form> -->
+            &emsp;
             <input type="submit" value="Delete"/>
           </form>
         </li>

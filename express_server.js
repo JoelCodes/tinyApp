@@ -1,12 +1,12 @@
-var express = require("express");
-var app = express();
-var PORT = process.env.PORT || 8080; // default port 8080
+const express = require("express");
+const app = express();
+const PORT = process.env.PORT || 8080; // default port 8080
 const cookieParser = require("cookie-parser");
 
 function generateRandomString() {
   var randomString = "";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-  for (var i = 0; i < 6; i++)
+  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  for (let i = 0; i < 6; i++)
     randomString += possible.charAt(Math.floor(Math.random() * possible.length));
   console.log(randomString);
   return randomString;
@@ -14,8 +14,23 @@ function generateRandomString() {
 
 const bodyParser = require("body-parser");  //middleware, by pasing into app.use
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser());
+app.use((req, res, next) => {
+  // console.log('I run for every request!');
+  res.locals.date = new Date(); // This only exists within the request/response
+                                // Each req/res gets its own Date
+  res.locals.username = req.cookies.username;
+  // var key = 'a'
+  // obj[key] === obj['a'] === obj.a
+  // obj['a'] === obj.a
+  // req.cookies['user-name'] // special char
 
+  next();
+})
 app.set("view engine", "ejs");
+
+// app.locals.date = new Date(); // Locals across entire application and all requests
+                                 // One request could change that for another request
 
 var urlDatabase = {  //only here for testing purposes
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -25,10 +40,6 @@ var urlDatabase = {  //only here for testing purposes
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
-
-// app.get("/", (req, res) => {
-//   res.end("Hello!");
-// });
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
@@ -79,7 +90,6 @@ app.post("/urls/:short/delete", (req, res) => {
 });
 
 app.post("/urls/:short/edit", (req, res) => {
-  // Update the database[req.params.short]
   let shortURL = req.params.short;      
   urlDatabase[shortURL] = req.body.longURL;
   console.log(urlDatabase[shortURL], req.body);
@@ -87,21 +97,27 @@ app.post("/urls/:short/edit", (req, res) => {
 });
 
 app.post("/urls/login", (req, res) => {
-  name = req.login;
-  value = req.params.login;
-  res.cookie(name, value); //why res.cookie and not req.cookie
-  // res.cookie(name, value);
-  // if(username == )
-  res.redirect("/urls");
+  var value = req.body.login;  //'login' has to match 'name' in _header.ejs
+  res.cookie("username", value); //res not req cause its sending the cookie back
+  res.redirect("/urls");    //'username' the 'name' in application in chrome dev tools
 });
 
-app.use(cookieParser());
-// req = {
-//   params : {
-//       shortURL : ____
-//   }
-// }
-//info from body is the form; info from a param is in the URL
+app.get("/cookies", (req, res) => {
+  res.json(req.cookies);
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  res.redirect("/urls");
+});
+// app.get('/test_view', (req, res) => {
+  // let templateVars = {
+  //   username: req.cookies["username"],
+  //   // date: new Date() // Provided by a middleware up above!!
+  // }; 
+  // res.render("test_view", templateVars);
+//   res.render("test_view");
+// })
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
