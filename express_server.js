@@ -120,6 +120,14 @@ app.post("/logout", (req, res) => {
 //   res.render("test_view");
 // })
 
+app.get('/registration', (req, res) => {
+  /* Show Registration */
+});
+
+app.post('/registration', (req, res) => {
+  // Add User
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
