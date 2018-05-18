@@ -17,9 +17,10 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.use((req, res, next) => {
   // console.log('I run for every request!');
-  res.locals.date = new Date(); // This only exists within the request/response
+  // res.locals.date = new Date(); // This only exists within the request/response
                                 // Each req/res gets its own Date
   res.locals.username = req.cookies.username;
+  console.log(res);
   // var key = 'a'
   // obj[key] === obj['a'] === obj.a
   // obj['a'] === obj.a
@@ -52,7 +53,7 @@ app.get("/hello", (req, res) => {
 app.get("/urls", (req, res) => {
   let templateVars = { urls: urlDatabase };
  // let urls = urlDatabase; -- ejs is doing this line behind the scense for you so that you can use urls in teh templates
-  res.render("urls_index", templateVars);
+ res.render("urls_index", templateVars);
 });
                //param thats in header, specific id;key
 app.get("/urls/:shortURL", (req, res) => {
@@ -96,7 +97,7 @@ app.post("/urls/:short/edit", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/urls/login", (req, res) => {
+app.post("/login", (req, res) => {
   var value = req.body.login;  //'login' has to match 'name' in _header.ejs
   res.cookie("username", value); //res not req cause its sending the cookie back
   res.redirect("/urls");    //'username' the 'name' in application in chrome dev tools
