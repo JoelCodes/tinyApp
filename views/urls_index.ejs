@@ -7,13 +7,20 @@
   <header>
       <% include partials/_header %>
   </header>
+  <h1>this is index /url/</h1>
     <!-- Add your EJS code here -->
     <!-- With = it prints to the template -->
     <ul>
       <% for (shortUrl in urls) { %>
         <li>
-          <span><%= urls[shortUrl] %></span>
-          <a href=>Shorten URL</a>
+          <%= [shortUrl] %> &#8594 <a href="/u/<%= shortUrl %>"><%= urls[shortUrl] %></a>
+          <a href="/urls/<%= shortUrl %>"><span>Edit</span></a>  <!--WIT line  -->
+          <!-- <form method="GET" action="/urls/<%= shortUrl %>">  
+            <input type="submit" value="Edit"/>   //EDIT BUTTON
+          </form> -->
+          <form method="POST" action="/urls/<%= shortUrl %>/delete">  
+            <input type="submit" value="Delete"/>
+          </form>
         </li>
       <% } %>
     </ul>

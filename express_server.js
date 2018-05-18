@@ -1,6 +1,7 @@
 var express = require("express");
 var app = express();
 var PORT = process.env.PORT || 8080; // default port 8080
+const cookieParser = require("cookie-parser");
 
 function generateRandomString() {
   var randomString = "";
@@ -48,15 +49,14 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { short: req.params.shortURL, long: urlDatabase[req.params.shortURL] }
   res.render("urls_show", templateVars);
 });
-
 // console.log(req.header)
 // { shortUrl: 'abc123' }
 
-app.post("/urls", (req, res) => {     
+app.post("/urls", (req, res) => {     //view url
   const longURL = req.body.longURL;  //key is longURL so whatever is being typed in
   const shortUrl = generateRandomString();
   urlDatabase[shortUrl] = longURL;
-  res.redirect('/urls/' + shortUrl);  // + the generateRandomString
+  res.redirect("/urls/");  // + the generateRandomString
 });
 // body = {
 //   name = jenn
@@ -64,12 +64,44 @@ app.post("/urls", (req, res) => {
 //   shortURL = what the generate function is generating
 // }
 
-app.get("/u/:shortURL", (req, res) => {
-  let longURL = req.body.longURL;
-  // let longURL = urlDatabase[shortUrl];
+app.get("/u/:shortURL", (req, res) => {   //how woudl i get from current pg to
+  let shortURL = req.params.shortURL;      //this one w/o manually changing it
+  let longURL = urlDatabase[shortURL];
   res.redirect(longURL);
   console.log(longURL);
 });
+
+app.post("/urls/:short/delete", (req, res) => {
+  let shortURL = req.params.short;      
+  // let longURL = urlDatabase[shortURL];
+  delete urlDatabase[shortURL]
+  res.redirect("/urls");
+});
+
+app.post("/urls/:short/edit", (req, res) => {
+  // Update the database[req.params.short]
+  let shortURL = req.params.short;      
+  urlDatabase[shortURL] = req.body.longURL;
+  console.log(urlDatabase[shortURL], req.body);
+  res.redirect("/urls");
+});
+
+app.post("/urls/login", (req, res) => {
+  name = req.login;
+  value = req.params.login;
+  res.cookie(name, value); //why res.cookie and not req.cookie
+  // res.cookie(name, value);
+  // if(username == )
+  res.redirect("/urls");
+});
+
+app.use(cookieParser());
+// req = {
+//   params : {
+//       shortURL : ____
+//   }
+// }
+//info from body is the form; info from a param is in the URL
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
