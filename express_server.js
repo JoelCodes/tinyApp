@@ -59,18 +59,15 @@ function checkUser(username, password) {
       return users[k];
     }
   }
-  return false;
 }
 
-// let username = req.body.email
-function checkEmail(email) {
+function checkEmail(email) {        // let username = req.body.email
   for (var k in users){                              
     if (users[k].email === email) {
       console.log(users[k])
       return true;
     }
   }
-  return false;
 }
 
 
@@ -145,12 +142,11 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   let user = checkUser(req.body.email, req.body.password);
-  
   if (!checkEmail(req.body.email)) {
     res.send("403");
   } else if (!user) {
     res.send("403");
-  } else {
+  } else { //key in cookie    user that is returned from function .id 
     res.cookie("user_id", user.id); //res not req cause its sending the cookie back
     res.redirect("/urls");    //'username' the 'name' in application in chrome dev tools
   }
@@ -177,8 +173,7 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   if (req.body.email === "" || req.body.password === "") {             
     res.send("400 Please enter email and password");
-  } else if (checkEmail(req.body.email)) {
-    // res.send("User already exists, please login");
+  } else if (checkEmail(req.body.email)) {  //if user email exists
     res.redirect("/login");
   } else {
     const userRandomID = generateRandomString();
