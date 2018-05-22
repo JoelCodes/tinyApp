@@ -51,17 +51,28 @@ const users = {
   }
 };
 
+function checkUser(username, password) {
+  // let password = req.body.password
+  // let username = req.body.email
+  for (var k in users) {                           
+    if (users[k].email === username && users[k].password === password) {
+      return users[k];
+    }
+  }
+  return false;
+}
+
 // let username = req.body.email
-// let password = req.body.password
+function checkEmail(email) {
+  for (var k in users){                              
+    if (users[k].email === email) {
+      console.log(users[k])
+      return true;
+    }
+  }
+  return false;
+}
 
-// function checkUser(username, password) {
-//   for (var k in users){     //username                              //password
-//     if (users[k].email === req.body.email && users[k].password === req.body.password) {
-//       return users[k];
-//     }
-
-//   }
-// }
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
@@ -74,7 +85,6 @@ app.get("/users.json", (req, res) => {
 app.get("/cookies", (req, res) => {
   res.json(req.cookies);
 });
-
 
 app.get("/urls", (req, res) => {
   let templateVars = { urls: urlDatabase };
@@ -130,13 +140,20 @@ app.post("/urls/:short/edit", (req, res) => {
 
 
 app.get("/login", (req, res) => {
-  res.render('urls_new');
+  res.render('urls_login');
 })
 
 app.post("/login", (req, res) => {
-  var value = req.body.login;  //'login' has to match 'name' in _header.ejs
-  res.cookie("user_id", value); //res not req cause its sending the cookie back
-  res.redirect("/urls");    //'username' the 'name' in application in chrome dev tools
+  let user = checkUser(req.body.email, req.body.password);
+  
+  if (!checkEmail(req.body.email)) {
+    res.send("403");
+  } else if (!user) {
+    res.send("403");
+  } else {
+    res.cookie("user_id", user.id); //res not req cause its sending the cookie back
+    res.redirect("/urls");    //'username' the 'name' in application in chrome dev tools
+  }
 });
 
 
@@ -160,8 +177,9 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   if (req.body.email === "" || req.body.password === "") {             
     res.send("400 Please enter email and password");
-  // } else if () {     // TODO: what if they are already in the database?!?!
-  // res.redirect("/urls_400");
+  } else if (checkEmail(req.body.email)) {
+    // res.send("User already exists, please login");
+    res.redirect("/login");
   } else {
     const userRandomID = generateRandomString();
     users[userRandomID] = {
