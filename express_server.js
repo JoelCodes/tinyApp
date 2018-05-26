@@ -13,7 +13,7 @@ function generateRandomString() {
   const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
   for (let i = 0; i < 6; i++)
     randomString += possible.charAt(Math.floor(Math.random() * possible.length));
-  console.log(randomString);
+  // console.log(randomString);
   return randomString;
 }
 
@@ -22,7 +22,6 @@ app.use((req, res, next) => { //middleware used instead of varsTemplates
     userDB: users,
     urlDB: urlDatabase
   }
-
   res.locals.user = users[req.cookies.user_id];
   next();
 })
@@ -63,7 +62,6 @@ function checkUser(username, password) {
 function checkEmail(email) {
   for (var k in users){                              
     if (users[k].email === email) {
-      console.log(users[k])
       return true;
     }
   }
@@ -94,15 +92,13 @@ app.get("/urls", (req, res) => {
   let user; 
   let urls = {};
   if (req.cookies.user_id) {
-    user = users[req.cookies.user_id];
+  user = users[req.cookies.user_id];
     for(let url in urlDatabase) {
       if (urlDatabase[url].userID === user.id) {
         urls[url] = urlDatabase[url];
       }
     }
   } else {
-    // user = false;
-    // urls = false;
     res.send("401 Please register or login");
   }
 
@@ -119,29 +115,16 @@ app.get("/urls/new", (req, res) => {
   } 
 });
 
-
-//param thats in header, specific id;key
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = {
-    short: req.params.shortURL,
-    long: urlDatabase[req.params.shortURL].long
-  };
-  res.render("urls_show", templateVars);
-
-  // if user is logged in and owns the URL for the given ID:        *******
-  // returns HTML with:
-  // the site header (see Display Requirements above)
-  // the short URL (for the given ID)
-  // a form which contains:
-  // the corresponding long URL
-  // an update button which makes a POST request to /urls/:id
-
-  // if a URL for the given ID does not exist:
-  // (Minor) returns HTML with a relevant error message
-  // if user is not logged in:
-  // returns HTML with a relevant error message
-  // if user is logged it but does not own the URL with the given ID:
-  // returns HTML with a relevant error message
+  if (req.cookies.user_id) {
+    let templateVars = {
+      short: req.params.shortURL,
+      long: urlDatabase[req.params.shortURL].long
+    };
+    res.render("urls_show", templateVars);
+  } else {
+    res.send("401 Please login");
+  }
 });
 
 app.post("/urls", (req, res) => {
@@ -159,12 +142,12 @@ app.post("/urls", (req, res) => {
   }
 });
 
-
 app.get("/u/:shortURL", (req, res) => { 
   let shortURL = req.params.shortURL;     
   let longURL = urlDatabase[shortURL].long;
   res.redirect(longURL);
 });
+
 
 app.post("/urls/:short/delete", (req, res) => {
   if (req.cookies.user_id) {
@@ -174,22 +157,30 @@ app.post("/urls/:short/delete", (req, res) => {
   } else {
     res.send("401 Please login");
   }
-  
-//   if user is logged in and owns the URL for the given ID:
-// updates the URL
-// redirects to /urls
-//  if user is not logged in:
-// (Minor) returns HTML with a relevant error message
-//  if user is logged it but does not own the URL for the given ID:
-// (Minor) returns HTML with a relevant error message
 });
 
 app.post("/urls/:short/edit", (req, res) => {
-  let shortURL = req.params.short;      
-  urlDatabase[shortURL].long = req.body.longURL;
-  res.redirect("/urls");
-});;
-
+  if (req.cookies.user_id) {
+    let shortURL = req.params.short;      
+    let user = urlDatabase[shortURL]["userID"][req.cookies.user_id];
+    if (shortURL === user) {
+      res.redirect("/urls");
+    } else {
+      res.send("403 URLs can only be edited by its owner");
+    }
+  } else {
+    res.send("401 Please login");
+  }
+});
+// if (req.cookies.user_id) {
+//   let shortURL = req.params.short;      
+//   urlDatabase[shortURL].long = req.body.longURL;
+//   if
+//   res.redirect("/urls");
+// } else {
+//   res.send("401 Please login");
+// }
+// });
 
 app.get("/login", (req, res) => {
   if (!req.cookies.user_id) {
@@ -227,7 +218,7 @@ app.get('/register', (req, res) => {
 
 app.post('/register', (req, res) => {
   if (req.body.email === "" || req.body.password === "") {             
-    res.send("400 Please enter email and password");
+    res.send("401 Please enter email and password");
   } else if (checkEmail(req.body.email)) {  
     res.send("400 Email already exists, please login");
   } else {
