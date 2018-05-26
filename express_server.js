@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 8080;
+const bcrypt = require('bcrypt');
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 const bodyParser = require("body-parser");  //middleware, by pasing into app.use
@@ -53,7 +54,7 @@ const users = {
 
 function checkUser(username, password) {
   for (var k in users) {                           
-    if (users[k].email === username && users[k].password === password) {
+    if (users[k].email === username && bcrypt.compareSync(users[k].password === password)) {
       return users[k];
     }
   }
@@ -87,6 +88,7 @@ app.get("/cookies", (req, res) => {
   res.json(req.cookies);
 });
 
+
 app.get("/urls", (req, res) => {
   // let user = req.cookies.user_id ? users[req.cookies.user_id] : false;
   let user; 
@@ -114,6 +116,7 @@ app.get("/urls/new", (req, res) => {
     res.redirect("/login");
   } 
 });
+
 
 app.get("/urls/:shortURL", (req, res) => {
   if (req.cookies.user_id) {
@@ -161,26 +164,14 @@ app.post("/urls/:short/delete", (req, res) => {
 
 app.post("/urls/:short/edit", (req, res) => {
   if (req.cookies.user_id) {
-    let shortURL = req.params.short;      
-    let user = urlDatabase[shortURL]["userID"][req.cookies.user_id];
-    if (shortURL === user) {
-      res.redirect("/urls");
-    } else {
-      res.send("403 URLs can only be edited by its owner");
-    }
+    let shortURL = req.params.short;
+    urlDatabase[shortURL].long = req.body.longURL;      
+    res.redirect("/urls");
   } else {
     res.send("401 Please login");
   }
 });
-// if (req.cookies.user_id) {
-//   let shortURL = req.params.short;      
-//   urlDatabase[shortURL].long = req.body.longURL;
-//   if
-//   res.redirect("/urls");
-// } else {
-//   res.send("401 Please login");
-// }
-// });
+
 
 app.get("/login", (req, res) => {
   if (!req.cookies.user_id) {
@@ -217,6 +208,8 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
+  const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   if (req.body.email === "" || req.body.password === "") {             
     res.send("401 Please enter email and password");
   } else if (checkEmail(req.body.email)) {  
@@ -226,11 +219,12 @@ app.post('/register', (req, res) => {
     users[userRandomID] = {
       id: userRandomID,
       email: req.body.email,
-      password: req.body.password,
+      password: hashedPassword,
     };
     res.cookie('user_id', userRandomID);
     res.redirect("/urls");
   }
+
 // encrypts the new user's password with bcrypt
 // sets a cookie
 // redirects to /urls
