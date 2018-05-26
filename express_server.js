@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const PORT = process.env.PORT || 8080; // default port 8080
+const PORT = process.env.PORT || 8080;
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 const bodyParser = require("body-parser");  //middleware, by pasing into app.use
@@ -18,24 +18,25 @@ function generateRandomString() {
 }
 
 app.use((req, res, next) => { //middleware used instead of varsTemplates
-  // res.locals.date = new Date(); // This only exists within the request/response
-                                // Each req/res gets its own Date
-
   res.locals = {
-  userDB: users,
-  urlDB: urlDatabase
-   }
+    userDB: users,
+    urlDB: urlDatabase
+  }
 
   res.locals.user = users[req.cookies.user_id];
   next();
 })
 
-// app.locals.date = new Date(); // Locals across entire application and all requests
-                                 // One request could change that for another request
 
-var urlDatabase = {  //only here for testing purposes
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+var urlDatabase = {  
+  "b2xVn2": {
+    long: "http://www.lighthouselabs.ca",
+    userID: "userRandomID"
+  },
+  "9sm5xK": {
+    long: "http://www.google.com",
+    userID: "user2RandomID"
+  }
 };
 
 const users = { 
@@ -52,8 +53,6 @@ const users = {
 };
 
 function checkUser(username, password) {
-  // let password = req.body.password
-  // let username = req.body.email
   for (var k in users) {                           
     if (users[k].email === username && users[k].password === password) {
       return users[k];
@@ -61,7 +60,7 @@ function checkUser(username, password) {
   }
 }
 
-function checkEmail(email) {        // let username = req.body.email
+function checkEmail(email) {
   for (var k in users){                              
     if (users[k].email === email) {
       console.log(users[k])
@@ -70,6 +69,13 @@ function checkEmail(email) {        // let username = req.body.email
   }
 }
 
+app.get("/", (req, res) => {
+  if (req.cookies.user_id) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
+});
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
@@ -84,60 +90,113 @@ app.get("/cookies", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
-  // let urls = urlDatabase; -- ejs is doing this line behind the scense for you so that you can use urls in teh templates
+  // let user = req.cookies.user_id ? users[req.cookies.user_id] : false;
+  let user; 
+  let urls = {};
+  if (req.cookies.user_id) {
+    user = users[req.cookies.user_id];
+    for(let url in urlDatabase) {
+      if (urlDatabase[url].userID === user.id) {
+        urls[url] = urlDatabase[url];
+      }
+    }
+  } else {
+    // user = false;
+    // urls = false;
+    res.send("401 Please register or login");
+  }
+
+  let templateVars = { urls: urls, user: user};
+  // let urls = urlDatabase; ejs is doing this line behind the scene so you can use urls in the templates
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  if (req.cookies.user_id) {    
+    res.render("urls_new");
+  } else {
+    res.redirect("/login");
+  } 
 });
+
 
 //param thats in header, specific id;key
 app.get("/urls/:shortURL", (req, res) => {
-  console.log(req.params);
-  let templateVars = { short: req.params.shortURL, long: urlDatabase[req.params.shortURL] }
+  let templateVars = {
+    short: req.params.shortURL,
+    long: urlDatabase[req.params.shortURL].long
+  };
   res.render("urls_show", templateVars);
-});
-// console.log(req.header)
-// { shortUrl: 'abc123' }
 
-app.post("/urls", (req, res) => {     //view url
-  const longURL = req.body.longURL;  //key is longURL so whatever is being typed in
-  const shortUrl = generateRandomString();
-  urlDatabase[shortUrl] = longURL;
-  res.redirect("/urls/");  // + the generateRandomString
-});
-// body = {
-//   name = jenn
-//   longURL = whatever is being typed in browser
-//   shortURL = what the generate function is generating
-// }
+  // if user is logged in and owns the URL for the given ID:        *******
+  // returns HTML with:
+  // the site header (see Display Requirements above)
+  // the short URL (for the given ID)
+  // a form which contains:
+  // the corresponding long URL
+  // an update button which makes a POST request to /urls/:id
 
-app.get("/u/:shortURL", (req, res) => {   //how woudl i get from current pg to
-  let shortURL = req.params.shortURL;      //this one w/o manually changing it
-  let longURL = urlDatabase[shortURL];
+  // if a URL for the given ID does not exist:
+  // (Minor) returns HTML with a relevant error message
+  // if user is not logged in:
+  // returns HTML with a relevant error message
+  // if user is logged it but does not own the URL with the given ID:
+  // returns HTML with a relevant error message
+});
+
+app.post("/urls", (req, res) => {
+  if (req.cookies.user_id) {
+    const userId = req.cookies.user_id;
+    const longURL = req.body["longURL"];  
+    const shortUrl = generateRandomString();
+    urlDatabase[shortUrl] = {
+      long: longURL,
+      userID: userId
+    }
+    res.redirect("/urls/"); 
+  } else {
+    res.send("403");
+  }
+});
+
+
+app.get("/u/:shortURL", (req, res) => { 
+  let shortURL = req.params.shortURL;     
+  let longURL = urlDatabase[shortURL].long;
   res.redirect(longURL);
-  console.log(longURL);
 });
 
 app.post("/urls/:short/delete", (req, res) => {
-  let shortURL = req.params.short;      
-  // let longURL = urlDatabase[shortURL];
-  delete urlDatabase[shortURL]
-  res.redirect("/urls");
+  if (req.cookies.user_id) {
+    let shortURL = req.params.short;      
+    delete urlDatabase[shortURL]
+    res.redirect("/urls");
+  } else {
+    res.send("401 Please login");
+  }
+  
+//   if user is logged in and owns the URL for the given ID:
+// updates the URL
+// redirects to /urls
+//  if user is not logged in:
+// (Minor) returns HTML with a relevant error message
+//  if user is logged it but does not own the URL for the given ID:
+// (Minor) returns HTML with a relevant error message
 });
 
 app.post("/urls/:short/edit", (req, res) => {
   let shortURL = req.params.short;      
-  urlDatabase[shortURL] = req.body.longURL;
-  // console.log(urlDatabase[shortURL], req.body);******
+  urlDatabase[shortURL].long = req.body.longURL;
   res.redirect("/urls");
-});
+});;
 
 
 app.get("/login", (req, res) => {
-  res.render('urls_login');
+  if (!req.cookies.user_id) {
+    res.render("urls_login");
+  } else {
+    res.redirect("urls");
+  }
 })
 
 app.post("/login", (req, res) => {
@@ -147,34 +206,30 @@ app.post("/login", (req, res) => {
   } else if (!user) {
     res.send("403");
   } else { //key in cookie    user that is returned from function .id 
-    res.cookie("user_id", user.id); //res not req cause its sending the cookie back
-    res.redirect("/urls");    //'username' the 'name' in application in chrome dev tools
+    res.cookie("user_id", user.id); 
+    res.redirect("/urls");   
   }
 });
-
 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
   res.redirect("/urls");
 });
-// app.get('/test_view', (req, res) => { 
-  // let templateVars = {
-  //   username: req.cookies["username"],
-  //   // date: new Date() // Provided by a middleware up above!!
-  // }; 
-  // res.render("test_view", templateVars);
-//   res.render("test_view");
-// })
+
 
 app.get('/register', (req, res) => {
-  res.render("urls_reg"); 
+  if (req.cookies.user_id) {
+    res.redirect("/urls");
+  } else {
+    res.render("urls_reg");
+  }
 });
 
 app.post('/register', (req, res) => {
   if (req.body.email === "" || req.body.password === "") {             
     res.send("400 Please enter email and password");
-  } else if (checkEmail(req.body.email)) {  //if user email exists
-    res.redirect("/login");
+  } else if (checkEmail(req.body.email)) {  
+    res.send("400 Email already exists, please login");
   } else {
     const userRandomID = generateRandomString();
     users[userRandomID] = {
@@ -182,11 +237,13 @@ app.post('/register', (req, res) => {
       email: req.body.email,
       password: req.body.password,
     };
-    res.cookie('user_id', userRandomID);   //res not req cause its sending the cookie back
+    res.cookie('user_id', userRandomID);
     res.redirect("/urls");
   }
+// encrypts the new user's password with bcrypt
+// sets a cookie
+// redirects to /urls
 });
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
