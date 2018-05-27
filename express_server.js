@@ -195,8 +195,6 @@ app.post("/login", (req, res) => {
   if (!user) {
     res.send("403");
   } else if (bcrypt.compareSync(req.body.password, user.password)) {
-    console.log(req.body.password);
-    console.log(user.password);
     req.session.user_id = user.id; 
     res.redirect("/urls");   
   } else {
@@ -218,7 +216,6 @@ app.post('/register', (req, res) => {
       email: req.body.email,
       password: hashedPassword,
     };
-    console.log(users);
     req.session.user_id = userRandomID;
     res.redirect("/urls");
   }
