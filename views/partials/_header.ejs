@@ -1,14 +1,14 @@
 <header>
   &emsp;
-  <% if (user) { %>  <!--//if there is a user name - button works-->
+  <% if (user) { %>
     <form method="POST" action="/logout"> 
-      <%= user["email"] %>&emsp;  <!--//keeps the email there-->
+      <%= user["email"] %>&emsp;
       <input type="submit" value="Logout"/>
     </form>
   <% } else { %>
-  <form method="GET" action="/login"> 
-    <input type="submit" value="Login"/> 
-  </form>
-  <a href="/register"><span>Register</span></a>
+    <form method="GET" action="/login"> 
+      <input type="submit" value="Login"/> 
+    </form>
+    <a href="/register"><span>Register</span></a>
   <% } %>
 </header>

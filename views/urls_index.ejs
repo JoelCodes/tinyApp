@@ -5,28 +5,21 @@
 </head>
 <body>
   <header>
-      <% include partials/_header %>
+    <% include partials/_header %>
   </header>
-  <h1>this is index /url/</h1>
-    <!-- Add your EJS code here -->
-    <!-- With = it prints to the template -->
-    <ul>
-      <% for (shortUrl in urls) { %>
-        <li>
-          <form method="POST" action="/urls/<%= shortUrl %>/delete">
-            <%= [shortUrl] %> &#8594 <a href="/u/<%= shortUrl %>"><%= urls[shortUrl].long %></a>
-            <a href="/urls/<%= shortUrl %>"><span>Edit</span></a>  <!--WIT line  -->
-            <!-- <form method="GET" action="/urls/<%= shortUrl %>">  
-              <input type="submit" value="Edit"/>   //EDIT BUTTON
-            </form> -->
-            &emsp;
-            <input type="submit" value="Delete"/>
-            
-          </form>
-        </li>
-        <% } %>
-        <br>
-        <a href="/urls/new"><span>Create a New Short Link</span></a>
-    </ul>
+  <ul>
+    <% for (shortUrl in urls) { %>
+      <li>
+        <form method="POST" action="/urls/<%= shortUrl %>/delete">
+          <%= [shortUrl] %> &#8594 <a href="/u/<%= shortUrl %>"><%= urls[shortUrl].long %></a>
+          <a href="/urls/<%= shortUrl %>"><span>Edit</span></a>
+          &emsp;
+          <input type="submit" value="Delete"/>
+        </form>
+      </li>
+    <% } %>
+    <br>
+    <a href="/urls/new"><span>Create a New Short Link</span></a>
+  </ul>
 </body>
 </html>

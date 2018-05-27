@@ -4,15 +4,13 @@
   <title>TinyApp</title>
 </head>
 <body>
-<header>
+  <header>
     <% include partials/_header %>
-</header>
- <!--pg w/ short & long url  -->
-
-<h1>ShortURL: <%= short %></h1>
-<form method="POST" action="/urls/<%= short %>/edit">  <!--WIT doing  -->
-  <input id="longURL" type="text" name="longURL" placeholder="<%= long %>" style="width: 300px">
-  <input type="submit" value="Update"/>
+  </header>
+  <h1>ShortURL: <%= short %></h1>
+  <form method="POST" action="/urls/<%= short %>/edit">
+    <input id="longURL" type="text" name="longURL" placeholder="<%= long %>" style="width: 300px">
+    <input type="submit" value="Update"/>
   </form>
 </body>
 </html>
