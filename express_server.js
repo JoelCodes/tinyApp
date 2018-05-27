@@ -1,25 +1,29 @@
 const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 8080;
-const bcrypt = require('bcrypt');
-const cookieParser = require("cookie-parser");
-app.use(cookieParser());
+const bcrypt = require("bcrypt");
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({extended: true}));
+const cookieParser = require("cookie-parser");
+const cookieSession = require("cookie-session");
+
 app.set("view engine", "ejs");
 
-
-
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser());
+app.use(cookieSession ({
+  name: "session",
+  keys: ["tinyApp123"]
+}))
 app.use((req, res, next) => {
   res.locals = {
     userDB: users,
     urlDB: urlDatabase
   }
-  res.locals.user = users[req.cookies.user_id];
+  res.locals.user = users[req.session.user_id];
   next();
-})
+});
 
-var urlDatabase = {  
+const urlDatabase = {  
   "b2xVn2": {
     long: "http://www.lighthouselabs.ca",
     userID: "userRandomID"
@@ -42,7 +46,6 @@ const users = {
     password: "dishwasher-funk"
   }
 };
-
 
 
 function generateRandomString() {
@@ -70,7 +73,6 @@ function checkEmail(email) {
 }
 
 
-
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -84,9 +86,8 @@ app.get("/cookies", (req, res) => {
 });
 
 
-
 app.get("/", (req, res) => {
-  if (req.cookies.user_id) {
+  if (req.session.user_id) {
     res.redirect("/urls");
   } else {
     res.redirect("/login");
@@ -96,8 +97,8 @@ app.get("/", (req, res) => {
 app.get("/urls", (req, res) => {
   let user; 
   let urls = {};
-  if (req.cookies.user_id) {
-    user = users[req.cookies.user_id];
+  if (req.session.user_id) {
+    user = users[req.session.user_id];
     for(let url in urlDatabase) {
       if (urlDatabase[url].userID === user.id) {
         urls[url] = urlDatabase[url];
@@ -111,14 +112,83 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+app.get("/urls/new", (req, res) => {
+  if (req.session.user_id) {    
+    res.render("urls_new");
+  } else {
+    res.redirect("/login");
+  } 
+});
+
+app.get("/urls/:shortURL", (req, res) => {
+  if (req.session.user_id) {
+    let templateVars = {
+      short: req.params.shortURL,
+      long: urlDatabase[req.params.shortURL].long
+    };
+    res.render("urls_show", templateVars);
+  } else {
+    res.send("401 Please login");
+  }
+});
+
+app.get("/u/:shortURL", (req, res) => { 
+  let shortURL = req.params.shortURL;     
+  let longURL = urlDatabase[shortURL].long;
+  res.redirect(longURL);
+});
+
+app.post("/urls", (req, res) => {
+  if (req.session.user_id) {
+    const userId = req.session.user_id;
+    const longURL = req.body["longURL"];  
+    const shortUrl = generateRandomString();
+    urlDatabase[shortUrl] = {
+      long: longURL,
+      userID: userId
+    }
+    res.redirect("/urls/"); 
+  } else {
+    res.send("403");
+  }
+});
+
+app.post("/urls/:short/edit", (req, res) => {
+  if (req.session.user_id) {
+    let shortURL = req.params.short;
+    urlDatabase[shortURL].long = req.body.longURL;      
+    res.redirect("/urls");
+  } else {
+    res.send("401 Please login");
+  }
+});
+
+app.post("/urls/:short/delete", (req, res) => {
+  if (req.session.user_id) {
+    let shortURL = req.params.short;      
+    delete urlDatabase[shortURL]
+    res.redirect("/urls");
+  } else {
+    res.send("401 Please login");
+  }
+});
+
 
 app.get("/login", (req, res) => {
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     res.render("urls_login");
   } else {
     res.redirect("urls");
   }
 })
+
+app.get('/register', (req, res) => {
+  if (req.session.user_id) {
+    res.redirect("/urls");
+  } else {
+    res.render("urls_reg");
+  }
+});
 
 app.post("/login", (req, res) => {
   let user = getUser(req.body.email);
@@ -126,19 +196,11 @@ app.post("/login", (req, res) => {
     res.send("403");
   } else if (bcrypt.compareSync(req.body.password, user.password)) {
     console.log(req.body.password);
-        console.log(user.password);
-    res.cookie("user_id", user.id); 
+    console.log(user.password);
+    req.session.user_id = user.id; 
     res.redirect("/urls");   
   } else {
     res.send("403");
-  }
-});
-
-app.get('/register', (req, res) => {
-  if (req.cookies.user_id) {
-    res.redirect("/urls");
-  } else {
-    res.render("urls_reg");
   }
 });
 
@@ -157,78 +219,14 @@ app.post('/register', (req, res) => {
       password: hashedPassword,
     };
     console.log(users);
-    res.cookie('user_id', userRandomID);
+    req.session.user_id = userRandomID;
     res.redirect("/urls");
   }
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session = null;
   res.redirect("/urls");
-});
-
-
-
-app.get("/urls/new", (req, res) => {
-  if (req.cookies.user_id) {    
-    res.render("urls_new");
-  } else {
-    res.redirect("/login");
-  } 
-});
-
-app.post("/urls", (req, res) => {
-  if (req.cookies.user_id) {
-    const userId = req.cookies.user_id;
-    const longURL = req.body["longURL"];  
-    const shortUrl = generateRandomString();
-    urlDatabase[shortUrl] = {
-      long: longURL,
-      userID: userId
-    }
-    res.redirect("/urls/"); 
-  } else {
-    res.send("403");
-  }
-});
-
-app.get("/urls/:shortURL", (req, res) => {
-  if (req.cookies.user_id) {
-    let templateVars = {
-      short: req.params.shortURL,
-      long: urlDatabase[req.params.shortURL].long
-    };
-    res.render("urls_show", templateVars);
-  } else {
-    res.send("401 Please login");
-  }
-});
-
-
-app.get("/u/:shortURL", (req, res) => { 
-  let shortURL = req.params.shortURL;     
-  let longURL = urlDatabase[shortURL].long;
-  res.redirect(longURL);
-});
-
-app.post("/urls/:short/edit", (req, res) => {
-  if (req.cookies.user_id) {
-    let shortURL = req.params.short;
-    urlDatabase[shortURL].long = req.body.longURL;      
-    res.redirect("/urls");
-  } else {
-    res.send("401 Please login");
-  }
-});
-
-app.post("/urls/:short/delete", (req, res) => {
-  if (req.cookies.user_id) {
-    let shortURL = req.params.short;      
-    delete urlDatabase[shortURL]
-    res.redirect("/urls");
-  } else {
-    res.send("401 Please login");
-  }
 });
 
 
