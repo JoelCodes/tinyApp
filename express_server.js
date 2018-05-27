@@ -3,13 +3,11 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 const bcrypt = require("bcrypt");
 const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
 const cookieSession = require("cookie-session");
 
 app.set("view engine", "ejs");
 
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
 app.use(cookieSession ({
   name: "session",
   keys: ["tinyApp123"]
