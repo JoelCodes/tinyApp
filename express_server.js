@@ -21,29 +21,9 @@ app.use((req, res, next) => {
   next();
 });
 
-const urlDatabase = {  
-  "b2xVn2": {
-    long: "http://www.lighthouselabs.ca",
-    userID: "userRandomID"
-  },
-  "9sm5xK": {
-    long: "http://www.google.com",
-    userID: "user2RandomID"
-  }
-};
+const urlDatabase = {};
 
-const users = { 
-  "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
-  },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
-    password: "dishwasher-funk"
-  }
-};
+const users = {};
 
 
 function generateRandomString() {
@@ -52,7 +32,7 @@ function generateRandomString() {
   for (let i = 0; i < 6; i++)
     randomString += possible.charAt(Math.floor(Math.random() * possible.length));
   return randomString;
-}
+};
 
 function getUser(email) {
   for (var k in users) {                           
@@ -60,7 +40,7 @@ function getUser(email) {
       return users[k];
     }
   }
-}
+};
 
 function checkEmail(email) {
   for (var k in users){                              
@@ -68,7 +48,7 @@ function checkEmail(email) {
       return true;
     }
   }
-}
+};
 
 
 app.get("/urls.json", (req, res) => {
@@ -103,7 +83,7 @@ app.get("/urls", (req, res) => {
       }
     }
   } else {
-    res.send("401 Please register or login");
+    res.status(401).send("Please register or login");
     return;
   }
   let templateVars = { urls: urls, user: user};
@@ -119,16 +99,24 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  let user; 
+  let urls = {};
   if (req.session.user_id) {
-    let templateVars = {
-      short: req.params.shortURL,
-      long: urlDatabase[req.params.shortURL].long
-    };
-    res.render("urls_show", templateVars);
+    user = users[req.session.user_id];
+    if (urlDatabase[req.params.shortURL].userID === user.id) {
+      let templateVars = {
+        short: req.params.shortURL,
+        long: urlDatabase[req.params.shortURL].long
+      };
+      res.render("urls_show", templateVars);
+    } else {
+      res.status(401).send("Users can only see their own URLs");
+    }
   } else {
-    res.send("401 Please login");
+    res.status(401).send("Please login");
   }
 });
+
 
 app.get("/u/:shortURL", (req, res) => { 
   let shortURL = req.params.shortURL;     
@@ -147,17 +135,26 @@ app.post("/urls", (req, res) => {
     }
     res.redirect("/urls/"); 
   } else {
-    res.send("403");
+    res.status("403");
   }
 });
 
 app.post("/urls/:short/edit", (req, res) => {
+  let user; 
+  let urls = {};
   if (req.session.user_id) {
-    let shortURL = req.params.short;
-    urlDatabase[shortURL].long = req.body.longURL;      
-    res.redirect("/urls");
+    user = users[req.session.user_id];
+    for(let url in urlDatabase) {
+      if (urlDatabase[url].userID === user.id) {
+        let shortURL = req.params.short;
+        urlDatabase[shortURL].long = req.body.longURL;      
+         res.redirect("/urls");
+      } else {
+        res.status(401).send("Users can only edit their own URLs");
+      }
+    }
   } else {
-    res.send("401 Please login");
+    res.status(401).send("Please login");
   }
 });
 
@@ -167,7 +164,7 @@ app.post("/urls/:short/delete", (req, res) => {
     delete urlDatabase[shortURL]
     res.redirect("/urls");
   } else {
-    res.send("401 Please login");
+    res.status(401).send("Please login");
   }
 });
 
@@ -178,7 +175,7 @@ app.get("/login", (req, res) => {
   } else {
     res.redirect("urls");
   }
-})
+});
 
 app.get('/register', (req, res) => {
   if (req.session.user_id) {
@@ -191,12 +188,12 @@ app.get('/register', (req, res) => {
 app.post("/login", (req, res) => {
   let user = getUser(req.body.email);
   if (!user) {
-    res.send("403");
+    res.status("403");
   } else if (bcrypt.compareSync(req.body.password, user.password)) {
     req.session.user_id = user.id; 
     res.redirect("/urls");   
   } else {
-    res.send("403");
+    res.status("403");
   }
 });
 
@@ -204,9 +201,9 @@ app.post('/register', (req, res) => {
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
   if (req.body.email === "" || req.body.password === "") {             
-    res.send("401 Please enter email and password");
+    res.status(401).send("Please enter email and password");
   } else if (checkEmail(req.body.email)) {  
-    res.send("400 Email already exists, please login");
+    res.status(400).send("Email already exists, please login");
   } else {
     const userRandomID = generateRandomString();
     users[userRandomID] = {
